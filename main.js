@@ -1,96 +1,167 @@
 let input = document.querySelector(".input");
 let submit = document.querySelector(".add");
 let tasksDiv = document.querySelector(".tasks");
-let completedTasks = document.querySelector(".completed-tasks");
+let separator = document.querySelector(".separator");
+let completedTasksDiv = document.querySelector(".completed-tasks");
+let deleteAll = document.querySelector(".del-all");
 
-// Empty Array To Store The Tasks
+// Empty Array to Store the Uncompleted Tasks
 let arrayOfTasks = [];
 
-// Check if There is Tasks In Local Storage
+// Empty Array to Store the Completed Tasks
+let arrayOfCompletedTasks = [];
+
+// Check if There Are Uncompleted Tasks in Local Storage
 if (localStorage.getItem("tasks")) {
+  tasksDiv.style.display = "block";
   arrayOfTasks = JSON.parse(localStorage.getItem("tasks"));
+  addElementsToPage(tasksDiv, arrayOfTasks);
 }
 
-// Get Data From Local Storage
-getDataFromLocalSt();
+// Check if There Are completed Tasks in local Storage
+if (localStorage.getItem("completedTasks")) {
+  completedTasksDiv.style.display = "block";
+  separator.style.display = "block";
+  arrayOfCompletedTasks = JSON.parse(localStorage.getItem("completedTasks"));
+  addElementsToPage(completedTasksDiv, arrayOfCompletedTasks);
+}
+
+// Add Disabled Attribute on Submit Button If the Input Value Is Empty
+submit.disabled = true;
+input.addEventListener("input", () => {
+  if (input.value.trim() !== "") {
+    submit.disabled = false;
+  } else {
+    submit.disabled = true;
+  }
+});
 
 // Add task
 submit.onclick = function () {
-  if (input.value.trim() !== "") {
-    addTaskToArray(input.value); // Add Task To Array Of Tasks
-    input.value = ""; // Empty Input Field
-  }
+  checkInputValue();
 };
 
 // Handle Enter Button
 input.onkeydown = function (event) {
   if (event.key == "Enter") {
     if (input.value.trim() !== "") {
-      addTaskToArray(input.value); // Add Task To Array Of Tasks
-      input.value = ""; // Empty Input Field
+      checkInputValue();
+    } else {
+      return false;
     }
   }
 };
 
-// Click On Task Element
-tasksDiv.addEventListener("click", (e) => {
+// Check The Input Field Value
+function checkInputValue() {
+  if (input.value.trim() !== "") {
+    addTaskToArray(input.value, false, arrayOfTasks, tasksDiv, "tasks"); // Add Task To Array Of Tasks
+    tasksDiv.style.display = "block";
+    input.value = ""; // Empty Input Field
+    submit.disabled = true; // Disabled Submit Button
+  }
+}
+
+document.addEventListener("click", (e) => {
   // Delete Button
   if (e.target.className === "del") {
-    // Remove Task From Local Storage
-    deleteTask(e.target.parentElement.dataset.id);
-    // Remove Element From Page
+    // Remove Task From Array and Add The New Array To Local Storage
+    if (e.target.parentElement.parentElement == completedTasksDiv) {
+      deleteTask(
+        e.target.parentElement.dataset.id,
+        arrayOfCompletedTasks,
+        "completedTasks"
+      );
+      checkArrayLength(arrayOfCompletedTasks, completedTasksDiv, separator);
+    } else {
+      deleteTask(e.target.parentElement.dataset.id, arrayOfTasks, "tasks");
+      checkArrayLength(arrayOfTasks, tasksDiv);
+    }
+    // Remove Task Element From Page
     e.target.parentElement.remove();
   }
-  // Task Element
-  if (e.target.classList.contains("task")) {
-    // Toggle Completed For The Task
-    toggleStatusTask(e.target.dataset.id);
-    // Toggle Done Class
-    e.target.classList.toggle("done");
-    e.target.firstElementChild.classList.toggle("done");
-  }
-  // The Child div of Task Element
-  if (e.target.classList.contains("task-text")) {
-    // Toggle Completed For The Task
-    toggleStatusTask(e.target.parentElement.dataset.id);
-    // Toggle Done Class
-    e.target.parentElement.classList.toggle("done");
-    e.target.classList.toggle("done");
+
+  // Check the Task Status Using the Checkbox Input
+  if (e.target.classList.contains("checkbox")) {
+    if (e.target.checked) {
+      // Toggle Done Class
+      e.target.parentElement.classList.toggle("done");
+      completedTasksDiv.style.display = "block";
+      separator.style.display = "block";
+      addTaskToArray(
+        e.target.nextElementSibling.textContent,
+        true,
+        arrayOfCompletedTasks,
+        completedTasksDiv,
+        "completedTasks"
+      );
+      // Delete the Completed Task From the Array
+      deleteTask(e.target.parentElement.dataset.id, arrayOfTasks, "tasks");
+      // Remove Task Element From Page
+      e.target.parentElement.remove();
+      document.getElementById("task-sound").play();
+      checkArrayLength(arrayOfTasks, tasksDiv);
+    } else {
+      tasksDiv.style.display = "block";
+      addTaskToArray(
+        e.target.nextElementSibling.textContent,
+        false,
+        arrayOfTasks,
+        tasksDiv,
+        "tasks"
+      );
+      // Delete the Uncompleted Task From the Array
+      deleteTask(
+        e.target.parentElement.dataset.id,
+        arrayOfCompletedTasks,
+        "completedTasks"
+      );
+      // Remove Task Element From Page
+      e.target.parentElement.remove();
+      document.getElementById("task-sound").play();
+      checkArrayLength(arrayOfCompletedTasks, completedTasksDiv, separator);
+    }
   }
 });
 
-function addTaskToArray(taskText) {
+function addTaskToArray(taskText, status, array, element, locKey) {
   // Task Data
   const task = {
     id: Date.now(),
     title: taskText,
-    completed: false,
+    completed: status,
   };
-  // push Task To Array Of Tasks
-  arrayOfTasks.push(task);
+  // push Task To Array
+  array.push(task);
   // Add Tasks To Page
-  addElementsToPage(arrayOfTasks);
+  addElementsToPage(element, array);
   // Add Tasks To Local Storage
-  addDataToLocalSt(arrayOfTasks);
+  addDataToLocalSt(locKey, array);
 }
 
-function addElementsToPage(arrayOfTasks) {
-  // Empty Tasks Div
-  tasksDiv.innerHTML = "";
+function addElementsToPage(element, array) {
+  // Empty the Content of the Element
+  element.innerHTML = "";
   // Looping On Array Of Tasks
-  arrayOfTasks.forEach((task) => {
+  array.forEach((task) => {
     // Create Main Div
     let div = document.createElement("div");
     div.className = "task";
     div.dataset.id = task.id;
+    let checkboxInput = document.createElement("input");
+    checkboxInput.type = "checkbox";
+    checkboxInput.className = "checkbox";
+    div.appendChild(checkboxInput);
     let divText = document.createElement("div");
-    divText.className = "task-text";
     divText.innerHTML = task.title;
     div.appendChild(divText);
     // Check If Task Is Done
     if (task.completed) {
       div.classList.add("done");
-      divText.classList.add("done");
+      checkboxInput.checked = true;
+    } else {
+      div.classList.remove("done");
+      checkboxInput.checked = false;
     }
     // Create Delete Button
     let span = document.createElement("span");
@@ -99,54 +170,51 @@ function addElementsToPage(arrayOfTasks) {
     // Append Button To Main Div
     div.appendChild(span);
     // Add Main Div To Tasks Div
-    tasksDiv.appendChild(div);
+    element.appendChild(div);
   });
   // Add Delete All Button
-  if (arrayOfTasks.length > 1) {
-    createDeleteAllBtn();
+  if (arrayOfTasks.length + arrayOfCompletedTasks.length > 1) {
+    deleteAll.style.display = "block";
   }
 }
 
-function addDataToLocalSt(arrayOfTasks) {
-  localStorage.setItem("tasks", JSON.stringify(arrayOfTasks));
-}
-
-function getDataFromLocalSt() {
-  let data = window.localStorage.getItem("tasks");
-  if (data) {
-    let tasks = JSON.parse(data);
-    addElementsToPage(tasks);
-  }
-}
-
-function deleteTask(taskId) {
-  arrayOfTasks = arrayOfTasks.filter((task) => task.id != taskId);
-  addDataToLocalSt(arrayOfTasks);
-  if (arrayOfTasks.length <= 1) {
-    tasksDiv.lastElementChild.remove();
-  }
-}
-
-function toggleStatusTask(taskId) {
-  for (let i = 0; i < arrayOfTasks.length; i++) {
-    if (arrayOfTasks[i].id == taskId) {
-      arrayOfTasks[i].completed = !arrayOfTasks[i].completed;
+function checkArrayLength(arr, ...elements) {
+  if (!arr.length) {
+    for (let i = 0; i < elements.length; i++) {
+      elements[i].style.display = "none";
     }
   }
-  addDataToLocalSt(arrayOfTasks);
 }
 
-function createDeleteAllBtn() {
-  let button = document.createElement("button");
-  button.classList.add("del-all");
-  button.innerHTML = "Delete All";
-  tasksDiv.append(button);
+function addDataToLocalSt(key, array) {
+  localStorage.setItem(key, JSON.stringify(array));
+}
+
+function deleteTask(taskId, arr, locKey) {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i].id == taskId) {
+      arr.splice(i, 1);
+      addDataToLocalSt(locKey, arr);
+      if (!arr.length) window.localStorage.removeItem(locKey);
+      break;
+    }
+  }
+  if (arrayOfTasks.length + arrayOfCompletedTasks.length <= 1) {
+    deleteAll.style.display = "none";
+  }
 }
 
 document.addEventListener("click", (event) => {
   if (event.target.className == "del-all") {
     arrayOfTasks = [];
+    arrayOfCompletedTasks = [];
     tasksDiv.innerHTML = "";
+    completedTasksDiv.innerHTML = "";
     window.localStorage.removeItem("tasks");
+    window.localStorage.removeItem("completedTasks");
+    event.target.style.display = "none";
+    tasksDiv.style.display = "none";
+    separator.style.display = "none";
+    completedTasksDiv.style.display = "none";
   }
 });

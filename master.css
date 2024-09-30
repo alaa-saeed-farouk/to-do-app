@@ -66,36 +66,50 @@ body {
   border-radius: 6px;
   border: none;
 }
-.tasks {
+.add[disabled] {
+  opacity: 0.6;
+}
+.tasks,
+.completed-tasks {
+  display: none;
   padding: 20px;
   background-color: #e0e0e0;
   font-size: 18px;
+}
+.separator {
+  display: none;
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
 }
 .task {
   background-color: #fff;
   padding: 15px;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr auto;
   gap: 10px;
+  align-items: center;
   border-radius: 6px;
 }
-.tasks .task:not(:last-child) {
+.tasks .task:not(:last-child),
+.completed-tasks .task:not(:last-child) {
   margin-bottom: 15px;
 }
-.tasks .task:hover {
+.task:hover {
   background-color: #f7f7f7;
 }
-.tasks .task.done {
+.task.done {
   opacity: 0.5;
+}
+.task input {
+  width: 25px;
+  height: 25px;
 }
 .task div {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.task div.done {
-  opacity: 0.5;
-}
-.tasks .task span {
+.task span {
   font-weight: bold;
   font-size: 12px;
   background-color: red;
@@ -115,7 +129,7 @@ body {
   font-size: 16px;
   font-weight: bold;
   color: white;
-  display: block;
+  display: none;
   margin: 0 auto;
   cursor: pointer;
 }

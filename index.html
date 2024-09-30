@@ -10,11 +10,15 @@
   <body>
     <div class="container">
       <div class="form">
-        <input type="text" class="input">
+        <input type="text" class="input" placeholder="Type Your Task">
         <input type="submit" value="Add Task" class="add">
       </div>
       <div class="tasks"></div>
-      <div class="completed-tasks"></div>
+      <span class="separator">Completed</span>
+      <div class="completed-tasks">
+      </div>
+      <button class="del-all">Delete All</button>
+      <audio id="task-sound" src="audio/task-sound.mp3" preload="auto"></audio>
     </div>
     <script src="main.js"></script>
   </body>
